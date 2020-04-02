@@ -253,7 +253,7 @@ class BigDir(object):
             return s
 
         def show(self):
-            print '{0:<15} {1:#x} {2:#x} {3:#d} {4} {5:#x}'.format(\
+            print '{0:<15} {1:08x} {2:08x} {3:12} {4} {5:x}'.format(\
                    self.name, self.loadaddr, self.execaddr, self.length,
                    self.attr_str(), self.ind_disc_addr)
         
