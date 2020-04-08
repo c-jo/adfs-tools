@@ -4,13 +4,11 @@ import array
 def dir_check_words(data, count, dircheck):
     for word in struct.unpack("{0}I".format(count), data):
         dircheck = word ^ ( ((dircheck >> 13) & 0xffffffff) | ((dircheck << 19) & 0xffffffff) )
-
     return dircheck
 
 def dir_check_bytes(data, count, dircheck):
     for byte in struct.unpack("{0}B".format(count), data):
         dircheck = byte ^ ( ((dircheck >> 13) & 0xffffffff) | ((dircheck << 19) & 0xffffffff) )
-
     return dircheck
 
 class DiscRecord(object):
@@ -260,26 +258,37 @@ class BigDir(object):
     def __init__(self, data):
         self.sequence, sbpr, name_len, self.size, \
         entries, names_size, self.parent_id = struct.unpack("Bxxx4sIIIII",data[0:0x1c])
+
+        if sbpr != 'SBPr':
+            raise RuntimeError("Invalid directory start marker ({0})".format(sbpr))
         
         self.name = data[0x1c:0x1c+name_len]
 
-        heap_start = (entries*0x1C) + ((0x1C+name_len+4)/4)*4
-        heap_data  = data[heap_start:heap_start+names_size]
+        heap_start = (entries*0x1c) + ((0x1c+name_len+4)/4)*4
+        heap_end   = heap_start+names_size
+        heap_data  = data[heap_start:heap_end]
 
         self.entries = []
+        data_start = ((0x1C+name_len+4)/4)*4
 
         for entry in range(0,entries):
-            start = (entry*0x1C) + ((0x1C+name_len+4)/4)*4
+            start = data_start + (entry*0x1C)
             self.entries.append(\
                 BigDir.Entry.from_dir(data[start:start+0x1c], heap_data))
 
         oven, end_seq, check = struct.unpack("4sBxxB",data[-8:])
         
-        if sbpr != 'SBPr' or oven != 'oven':
-            print "Warning: Directory Markers? Found: {0} / {1}".format(sbpr,oven)
+        if oven != 'oven':
+            raise RuntimeError("Invalid directory end marker ({0})".format(oven))
 
-        #print "Check Byte: {0:02x}".format(check)
-        self.data()
+        tail = data[-8:]
+        calc = dir_check_words(data[0:heap_end], heap_end/4, 0)
+        calc = dir_check_words(tail[0:4], 1, calc)
+        calc = dir_check_bytes(tail[4:7], 3, calc)
+        calc = (calc << 0 & 0xff) ^ (calc >> 8 & 0xff) ^ (calc >> 16 & 0xff) ^ (calc >> 24 & 0xff)
+
+        if calc != check:
+            raise RuntimeError("Directory check-byte failed.")
 
     def data(self):
         # TODO: Currently only handles 2048 byte directories.
@@ -340,9 +349,15 @@ class BigDir(object):
     def add(self, name, loadaddr, execaddr, length, attribs, ind_disc_addr):
         self.entries.append(BigDir.Entry(name, loadaddr, execaddr, length, attribs, ind_disc_addr))
 
+    def __getitem__(self, name):
+        for entry in self.entries:
+            if entry.name == name:
+                return entry
+
     def delete(self, name):
         for entry in self.entries:
-            self.entries.remove(entry)
-            return True
+            if entry.name == name:
+                self.entries.remove(entry)
+                return True
 
 
