@@ -3,7 +3,11 @@
 from objects import BigDir
 from utils import get_map
 
-fd = open("/dev/mmcblk0", "r+b")
+if len(sys.argv) != 2:
+    print("Usage: add_file <device>")
+    exit(1)
+
+fd = open(sys.argv[1], "r+b")
 
 fs_map = get_map(fd)
 
