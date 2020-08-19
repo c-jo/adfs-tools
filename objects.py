@@ -32,7 +32,7 @@ class DiscRecord(object):
         print("Bytes per map bit: %d" % self.bpmb)
         print("Number of zones: %d" % self.nzones)
         print("Zone spare: %d" % self.zone_spare)
-        print("Disc Size: %d (M)" % (self.disc_size / 1024 / 1024) )
+        print("Disc Size: %d (MB)" % (self.disc_size / 1024 / 1024) )
         print("Root size: %d\n" % self.root_size)
 
 class Map(object):
