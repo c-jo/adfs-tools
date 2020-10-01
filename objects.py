@@ -240,6 +240,9 @@ class BigDir(object):
             name = name_heap[name_ptr:name_ptr+name_len]
             return BigDir.Entry(name, loadaddr, execaddr, length, attribs, ind_disc_addr)
 
+        def is_directory(self):
+            return self.attribs & 1<<3
+
         def attr_str(self):
             s = ''
             s += "R" if self.attribs & 1<<0 else "-"
@@ -359,5 +362,10 @@ class BigDir(object):
             if entry.name == name:
                 self.entries.remove(entry)
                 return True
+
+    def find(self, name):
+        for entry in self.entries:
+            if entry.name.lower() == name.lower():
+                return entry
 
 
