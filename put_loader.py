@@ -5,7 +5,11 @@ from utils import get_map
 
 DOS_MAX = 128*1024*1024
 
-fd = open("Loader", "rb")
+if len(sys.argv) != 2:
+    print("Usage: put_loader <device>")
+    exit(1)
+
+fd = open(sys.argv[1], "rb")
 dos_data = fd.read(DOS_MAX)
 fd.close()
 

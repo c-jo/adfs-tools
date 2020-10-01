@@ -10,7 +10,11 @@ fd.close()
 
 print "Loader is {0} bytes long.".format(loader_len)
 
-fd = open("/dev/mmcblk0", "r+b")
+if len(sys.argv) != 2:
+    print("Usage: claim_frags <device>")
+    exit(1)
+
+fd = open(sys.argv[1], "r+b")
 map_address, map_length = find_map(fd)
 fd.seek(map_address)
 fs_map = Map(fd.read(map_length))

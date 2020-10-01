@@ -7,7 +7,7 @@ To resize the RISC OS card uses some python scripts on linux, plus using RISC OS
 
 Firstly on linux - copy the RISC OS Pi image onto the SD card.
 
-Run get_loader.py to extract the 'Loader' (this is the DOS area used by the Pi to boot).
+Run get_loader.py <device> to extract the 'Loader' (this is the DOS area used by the Pi to boot). <device> is the device of your card - it's usually /dev/mmcblk0
 
 Put the card into the the Pi and boot into RISC OS.
 
@@ -17,11 +17,11 @@ Reformat the SD card using Utils.Caution.!HForm it's SDFS (M), say no to keeping
 
 After formatting, put the card back into the linux machine.
 
-run put_loader.py to put the loader you saved earlier back onto the card. Exactly where it needs to go depends on the LFAU, which depends on the size of the card, the script will work it out for you.
+run put_loader.py <device> to put the loader you saved earlier back onto the card. Exactly where it needs to go depends on the LFAU, which depends on the size of the card, the script will work it out for you.
 
-run claim_frags.py to put the loader into the Filecore map. This marks the area used by the loader, and then
+run claim_frags.py <device> to put the loader into the Filecore map. This marks the area used by the loader, and then
 
-run add_file.py to put the 'Loader' file into the root directory.
+run add_loader.py <device> to put the 'Loader' file into the root directory.
 
 put the card back in the Pi and RISC OS should boot to a command line, type *Desktop and press enter. You can just OK the message about !BOOT not being found.
 
@@ -40,6 +40,4 @@ When it's extracted, move everything from HardDisc4 to the root, and delete the 
 Reboot and you should get a working basic RISC OS system. If so you can delete the self-extracting file and move the Loader file into !Boot.
 
 That will get the standard RISC OS 5 disc structure, but not the full Pi image that was on the card to start with. 
-
-
 

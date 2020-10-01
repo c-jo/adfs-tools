@@ -4,8 +4,11 @@ import struct
 
 SECSIZE = 512
 
-# fd = open("/home/cmj/ro524.img", "r")
-fd = open("/dev/mmcblk0", "r")
+if len(sys.argv) != 2:
+    print("Usage: get_loader <device>")
+    exit(1)
+
+fd = open(sys.argv[1], "rb")
 
 fd.seek(0, 0)
 
