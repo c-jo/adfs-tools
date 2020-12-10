@@ -1,5 +1,6 @@
 #! /usr/bin/python
 
+import sys
 from objects import BigDir
 from utils import get_map
 

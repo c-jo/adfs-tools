@@ -1,5 +1,6 @@
 #! /usr/bin/python
 
+import sys
 from objects import Map
 from utils import find_map
 

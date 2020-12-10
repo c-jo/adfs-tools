@@ -1,11 +1,12 @@
 #! /usr/bin/python
 
+import sys
 import struct
 
 SECSIZE = 512
 
-if len(sys.argv) != 2:
-    print("Usage: get_loader <device>")
+if len(sys.argv) != 3:
+    print("Usage: get_loader <device> <loader file>")
     exit(1)
 
 fd = open(sys.argv[1], "rb")
@@ -34,8 +35,8 @@ data = fd.read(length)
 
 fd.close()
 
-print "Saving 'Loader' file."
-fd = open("Loader","wb")
+print "Saving 'Loader' file to",sys.argv[2]
+fd = open(sys.argv[2],"wb")
 fd.write(data)
 fd.close()
 
