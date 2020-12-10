@@ -1,43 +1,80 @@
-Some notes on expanding the size of the Rasperry Pi CD card. This is all done at your own risk!
+Some notes on expanding the size of the Rasperry Pi CD card. This is all 
+done at your own risk!
 
-The card image available from RISC OS Open is around 2GB, but if your memory card is larger than that you won't be
-able to use all of it. Because there is no easy way to resize a filecore disc, the only way to do so is to reformat it. However the Pi need a DOS format partition to boot from, and reformatting will also destroy the partition table, and there is a risk of corruption of the DOS partition as RISC OS doesn't know it's there.
+The card image available from RISC OS Open is around 2GB, but if your 
+memory card is larger than that you won't be able to use all of it. 
+Because there is no easy way to resize a filecore disc, the only way to 
+do so is to reformat it. However the Pi need a DOS format partition to 
+boot from, and reformatting will also destroy the partition table, and 
+there is a risk of corruption of the DOS partition as RISC OS doesn't 
+know it's there.
 
-To resize the RISC OS card uses some python scripts on linux, plus using RISC OS itself. The scripts will need to run as root (or with sudo).
+To resize the RISC OS card uses some python scripts on linux, plus using 
+RISC OS itself. The scripts will need to run as root (or with sudo).
 
 Firstly on linux - copy the RISC OS Pi image onto the SD card.
 
-Run get_loader.py <device> to extract the 'Loader' (this is the DOS area used by the Pi to boot). <device> is the device of your card - it's usually /dev/mmcblk0
+Run get_loader.py <device> <loader> to extract the 'Loader' (this is the 
+DOS area used by the Pi to boot). <device> is the device of your card - 
+it's usually /dev/mmcblk0. <loader> is the filename to store the loader 
+in. It can be whatever you want.
 
 Put the card into the the Pi and boot into RISC OS.
 
-Copy the contents to a USB stick - use something that will preseve the file types, so an archive or RISC OS format memory stick. You DON'T need to copy !Boot.Loader, although nothing bad will happen if you do, it's an extra 48M of data to copy for no reason). You will also need to put on the stick anything needed to extract the archive, or make it self-extracting. Rememeber that you will have no boot sequence running at restore time.
+Copy the contents to a USB stick - use something that will preseve the 
+file types, so an archive or RISC OS format memory stick. You DON'T need 
+to copy !Boot.Loader, although nothing bad will happen if you do, it's 
+an extra 48M of data to copy for no reason). You will also need to put 
+on the stick anything needed to extract the archive, or make it 
+self-extracting. Rememeber that you will have no boot sequence running 
+at restore time.
 
-Reformat the SD card using Utils.Caution.!HForm it's SDFS (M), say no to keeping the shape and accept what it then offers - you want to make it bootable, and enable long filenames.
+Reformat the SD card using Utils.Caution.!HForm it's SDFS (M), say no to 
+keeping the shape and accept what it then offers - you want to make it 
+bootable, and enable long filenames.
 
 After formatting, put the card back into the linux machine.
 
-run put_loader.py <device> to put the loader you saved earlier back onto the card. Exactly where it needs to go depends on the LFAU, which depends on the size of the card, the script will work it out for you.
+run put_loader.py <device> <loader> to put the loader you saved earlier 
+back onto the card. Exactly where it needs to go depends on the LFAU, 
+which depends on the size of the card, the script will work it out for 
+you.
 
-run claim_frags.py <device> to put the loader into the Filecore map. This marks the area used by the loader, and then
+run claim_frags.py <device> to put the loader into the Filecore map. 
+This marks the area used by the loader, and then
 
-run add_loader.py <device> to put the 'Loader' file into the root directory.
+run add_loader.py <device> to put the 'Loader' file into the root 
+directory.
 
-put the card back in the Pi and RISC OS should boot to a command line, type *Desktop and press enter. You can just OK the message about !BOOT not being found.
+put the card back in the Pi and RISC OS should boot to a command line, 
+type *Desktop and press enter. You can just OK the message about !BOOT 
+not being found.
 
 You can use the 'Free' window to verify RISC OS is now using all the card.
 
 You should then be able to copy or extract the files back onto the card.
 
-You can move the 'Loader' file from the root back inside !Boot. If you ended up copying the loader file earlier, you should make sure you delete the one you copied back, and keep the one that the scripts put on the card for you. 
+You can move the 'Loader' file from the root back inside !Boot. If you 
+ended up copying the loader file earlier, you should make sure you 
+delete the one you copied back, and keep the one that the scripts put on 
+the card for you.
 
-If you need to get a working system before you restore your files, put the card in the Linux machine and mount the DOS partion in linux and copy the self-extracting hard disc image (from https://www.riscosopen.org/content/downloads/common) onto the DOS partition.
+If you need to get a working system before you restore your files, put 
+the card in the Linux machine and mount the DOS partion in linux and 
+copy the self-extracting hard disc image (from 
+https://www.riscosopen.org/content/downloads/common) onto the DOS 
+partition.
 
-Unmount it, and put the card back into the Pi. You'll need to issue a *Desktop, then openn the 'Loader' file and copy the self-extracting image to the root of the card, set it's type to 'Utility' and run it.
+Unmount it, and put the card back into the Pi. You'll need to issue a 
+*Desktop, then openn the 'Loader' file and copy the self-extracting 
+image to the root of the card, set it's type to 'Utility' and run it.
 
-When it's extracted, move everything from HardDisc4 to the root, and delete the now-empty directory.
+When it's extracted, move everything from HardDisc4 to the root, and 
+delete the now-empty directory.
 
-Reboot and you should get a working basic RISC OS system. If so you can delete the self-extracting file and move the Loader file into !Boot.
+Reboot and you should get a working basic RISC OS system. If so you can 
+delete the self-extracting file and move the Loader file into !Boot.
 
-That will get the standard RISC OS 5 disc structure, but not the full Pi image that was on the card to start with. 
+That will get the standard RISC OS 5 disc structure, but not the full Pi 
+image that was on the card to start with.
 
