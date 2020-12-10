@@ -1,29 +1,32 @@
 #! /usr/bin/python
 
+import sys
 import struct
 from utils import get_map
 
 DOS_MAX = 128*1024*1024
 
-if len(sys.argv) != 2:
-    print("Usage: put_loader <device>")
+if len(sys.argv) != 3:
+    print("Usage: put_loader <device> <loader file>")
     exit(1)
 
-fd = open(sys.argv[1], "rb")
+fd = open(sys.argv[2], "rb")
 dos_data = fd.read(DOS_MAX)
 fd.close()
 
 print "DOS area is {0} bytes.".format(len(dos_data))
 
-fd = open("/dev/mmcblk0", "r+b")
+fd = open(sys.argv[1], "r+b")
 
 fs_map = get_map(fd)
-lfau = (fs_map.disc_record.idlen+1)*fs_map.disc_record.bpmb
+lfau = fs_map.disc_record.bpmb
+min_frag = (fs_map.disc_record.idlen+1)*fs_map.disc_record.bpmb
 
-dos_start = lfau / fs_map.disc_record.secsize
+dos_start = min_frag / fs_map.disc_record.secsize
 dos_secs  = len(dos_data) / fs_map.disc_record.secsize
 
-print "Disc has LFAU of {0} ({1}K), so loader area starts at sector {2}".format(lfau,lfau/1024,dos_start)
+print "Disc has LFAU of {}, minium fragment size {}K.".format(lfau,min_frag/1024)
+print "Loader area starts at sector {}".format(dos_start)
 
 fd.seek(0, 2)
 disc_size = fd.tell()
