@@ -57,3 +57,6 @@ while not quit:
             path = path[:-1]
             csd = path[-1]
 
+    if cmd[0] == 'quit' or cmd[0] == 'exit':
+        quit = True
+
