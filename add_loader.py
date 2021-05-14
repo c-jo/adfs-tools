@@ -5,7 +5,7 @@ from objects import BigDir
 from utils import get_map
 
 if len(sys.argv) != 2:
-    print("Usage: add_file <device>")
+    print("Usage: add_loader <device>")
     exit(1)
 
 fd = open(sys.argv[1], "r+b")
