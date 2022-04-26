@@ -55,15 +55,15 @@ class Map(object):
 
     def get_bit(self, zone, bit):
         byte = (bit / 8) + (64 if zone == 0 else 4) # Zone 0 has the disc record
-	shift = bit % 8
-	data = self.data[byte+zone*self.disc_record.secsize]
-	val = data & 1 << shift
-	return 1 if val > 0 else 0
+        shift = bit % 8
+        data = self.data[byte+zone*self.disc_record.secsize]
+        val = data & 1 << shift
+        return 1 if val > 0 else 0
 
     def set_bit(self, zone, bit, val):
         byte = (bit / 8) + (64 if zone == 0 else 4) # Zone 0 has the disc record
-	shift = bit % 8
-	old_data = self.data[byte+zone*self.disc_record.secsize]
+        shift = bit % 8
+        old_data = self.data[byte+zone*self.disc_record.secsize]
         new_data = old_data & ( 0xff ^ 1<<shift) | ((1<<shift) if val else 0)
         self.data[byte+zone*self.disc_record.secsize] = new_data
 
@@ -87,11 +87,11 @@ class Map(object):
             rover -= 4
 
         # Don't add the check byte when calculating its value
-	sum_vector0 += (sum_vector3>>8)
-	sum_vector1 += self.data[rover+1] + (sum_vector0>>8)
-	sum_vector2 += self.data[rover+2] + (sum_vector1>>8)
-	sum_vector3 += self.data[rover+3] + (sum_vector2>>8)
-	
+        sum_vector0 += (sum_vector3>>8)
+        sum_vector1 += self.data[rover+1] + (sum_vector0>>8)
+        sum_vector2 += self.data[rover+2] + (sum_vector1>>8)
+        sum_vector3 += self.data[rover+3] + (sum_vector2>>8)
+
         return (sum_vector0^sum_vector1^sum_vector2^sum_vector3) & 0xff;
 
     def allocate(self, zone, frag_id, from_bit, to_bit):
@@ -137,7 +137,7 @@ class Map(object):
             print("Zone %d (FreeLink = %x - %d bits)" % (zone, free_link, free_offset))
         else:
             print("Zone %d (FreeLink = %x - No free space)" % (zone, free_link))
-            
+
         bit = 0
         while True:
            frag_id = 0
@@ -152,7 +152,7 @@ class Map(object):
                    print "** Stop bit not found before end of zone."
                    break
                bit += 1
-       
+
            bit += 1
            disc_start = (start+bits_before)*self.disc_record.bpmb
            disc_end   = (bit  +bits_before)*self.disc_record.bpmb
@@ -181,7 +181,7 @@ class Map(object):
 
            while (self.get_bit(zone, bit) == 0):
                bit += 1
-       
+
            bit += 1
            disc_start = (start+bits_before)*self.disc_record.bpmb
            disc_end   = (bit  +bits_before)*self.disc_record.bpmb
@@ -257,14 +257,14 @@ class BigDir(object):
             print '{0:<15} {1:08x} {2:08x} {3:12} {4} {5:x}'.format(\
                    self.name, self.loadaddr, self.execaddr, self.length,
                    self.attr_str(), self.ind_disc_addr)
-        
+
     def __init__(self, data):
         self.sequence, sbpr, name_len, self.size, \
         entries, names_size, self.parent_id = struct.unpack("Bxxx4sIIIII",data[0:0x1c])
 
         if sbpr != 'SBPr':
             raise RuntimeError("Invalid directory start marker ({0})".format(sbpr))
-        
+
         self.name = data[0x1c:0x1c+name_len]
 
         heap_start = (entries*0x1c) + ((0x1c+name_len+4)/4)*4
@@ -280,7 +280,7 @@ class BigDir(object):
                 BigDir.Entry.from_dir(data[start:start+0x1c], heap_data))
 
         oven, end_seq, check = struct.unpack("4sBxxB",data[-8:])
-        
+
         if oven != 'oven':
             raise RuntimeError("Invalid directory end marker ({0})".format(oven))
 
@@ -341,7 +341,7 @@ class BigDir(object):
         while len(data) < 2040:
             data += '\x00'
 
-        data += tail + chr(check)	
+        data += tail + chr(check)
         return data
 
     def show(self):
