@@ -5,7 +5,8 @@ from objects import DiscRecord
 import struct
 
 ZONE0BITS = 60*8 # Bits used in Zone 0
-IDLEN_MAX = 19
+IDLEN_MAX = 21
+MAPSIZE_MAX = 32*1024*1024 # 32MB
 
 """
 #define LOG2SECTORSIZE 10
@@ -22,7 +23,7 @@ IDLEN_MAX = 19
 """
 
 ####
-disc_sectors = 117231408 
+disc_sectors = 234441648
 log2_secsize = 9
 ####
 #disc_sectors = 488377323//2
@@ -67,7 +68,7 @@ def find_alloc(sectors, log2ss, zones, log2bpmb):
     """Find an allocation for the given zones/log2bpmb, or 
        None if one cannot be found."""
     for zonespare in range(32,64): # 32 to ZoneBits%-Zone0Bits%-8*8
-        for idlen in range(log2_secsize, IDLEN_MAX):
+        for idlen in range(log2_secsize, IDLEN_MAX+1):
             if check_alloc(sectors, log2ss, zones, zonespare, log2bpmb, idlen):
                 return (zones, zonespare, log2bpmb, idlen)
 
@@ -79,10 +80,12 @@ print("Disc has {} sectors of {} bytes - Capacity {:.1f} GB".format(
 allocs = []
 
 # Find what log2 bpmb / zones combinations we can use
-for log2bpmb in range(7,22):
+for log2bpmb in range(7,26):
     # Roughly how many zones we need
     map_bits_needed = (disc_sectors << log2_secsize) // (1 << log2bpmb)
     zones_guess = map_bits_needed // (1 << log2_secsize) // 8
+    if zones_guess << log2_secsize > MAPSIZE_MAX:
+        continue
 
     for zones in range(zones_guess, zones_guess + 10 + zones_guess // 20): 
         alloc = find_alloc(disc_sectors, log2_secsize, zones, log2bpmb)
@@ -91,4 +94,5 @@ for log2bpmb in range(7,22):
             break
 
 for alloc in allocs:
-     print("LFAU: {}K, map size: {}K".format((1<<alloc[2])/1024, (alloc[0]<<log2_secsize)/1024))
+     print("LFAU: {}K, map size: {}K ({} zones)".format((1<<alloc[2])/1024, (alloc[0]<<log2_secsize)/1024, alloc[0]))
+
