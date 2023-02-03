@@ -9,7 +9,7 @@ fd.seek(0,2)
 loader_len = fd.tell()
 fd.close()
 
-print "Loader is {0} bytes long.".format(loader_len)
+print("Loader is {0} bytes long.".format(loader_len))
 
 if len(sys.argv) != 2:
     print("Usage: claim_frags <device>")
@@ -22,8 +22,8 @@ fs_map = Map(fd.read(map_length))
 
 loader_start = (fs_map.disc_record.idlen+1) * fs_map.disc_record.bpmb
 
-bits_needed = loader_len   / fs_map.disc_record.bpmb
-start_bit   = loader_start / fs_map.disc_record.bpmb
+bits_needed = loader_len   // fs_map.disc_record.bpmb
+start_bit   = loader_start // fs_map.disc_record.bpmb
 last_bit    = start_bit + bits_needed
 
 while start_bit * fs_map.disc_record.bpmb < loader_start:
@@ -32,7 +32,7 @@ while start_bit * fs_map.disc_record.bpmb < loader_start:
 while bits_needed * fs_map.disc_record.bpmb < loader_len:
     bits_needed += 1
 
-print "{0} map bits required for loader, from bit {1} to {2}.".format(bits_needed,start_bit,last_bit)
+print("{0} map bits required for loader, from bit {1} to {2}.".format(bits_needed,start_bit,last_bit))
 
 zone = 0
 
@@ -66,5 +66,5 @@ while True:
     zone += 1
 
 fd.seek(map_address)
-fd.write(fs_map.data.tostring())
+fd.write(fs_map.data.tobytes())
 

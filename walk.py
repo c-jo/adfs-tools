@@ -15,7 +15,7 @@ def split_internal_disc_address(internal_disc_address):
     return (fragment_id, sector_offset)
 
 def walk(directory, parent="$"):
-    print("{}.{}".format(parent, directory.name))
+    print(("{}.{}".format(parent, directory.name)))
     for entry in directory.entries:
         if entry.attribs & 1<<3:
             frag_id, offset = split_internal_disc_address(entry.ind_disc_addr)
