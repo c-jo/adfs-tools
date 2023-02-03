@@ -20,8 +20,8 @@ root_locations = fs_map.find_fragment(root_frag_id, fs_map.disc_record.root_size
 fd.seek((root_locations[0])[0])
 
 root = BigDir(fd.read(fs_map.disc_record.root_size))
-root.delete('Loader')
-root.add('Loader', 0xffffc856, 0xeadfc18c, 50331648, 3, 0x300)
+root.delete(b'Loader')
+root.add(b'Loader', 0xffffc856, 0xeadfc18c, 50331648, 3, 0x300)
 root.sequence += 1
 root.show()
 root.data()

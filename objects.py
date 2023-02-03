@@ -27,21 +27,21 @@ class DiscRecord(object):
 
     def show(self):
         print("Disc Record")
-        print("Sector size: %d" %self.secsize)
-        print("ID Length: %d" % self.idlen)
-        print("Bytes per map bit: %d" % self.bpmb)
-        print("Number of zones: %d" % self.nzones)
-        print("Zone spare: %d" % self.zone_spare)
-        print("Disc Size: %d (MB)" % (self.disc_size / 1024 / 1024) )
-        print("Root size: %d\n" % self.root_size)
+        print(("Sector size: %d" % self.secsize))
+        print(("ID Length: %d" % self.idlen))
+        print(("Bytes per map bit: %d" % self.bpmb))
+        print(("Number of zones: %d" % self.nzones))
+        print(("Zone spare: %d" % self.zone_spare))
+        print(("Disc Size: %d (MB)" % (self.disc_size // 1024 // 1024) ))
+        print(("Root size: %d\n" % self.root_size))
 
 class Map(object):
     def __init__(self, data):
         self.data = array.array('B')
-        self.data.fromstring(data)
+        self.data.frombytes(data)
         self.disc_record = DiscRecord(data[4:64])
         self.nzones = self.disc_record.nzones
-        self.id_per_zone = ((self.disc_record.secsize*8) - self.disc_record.zone_spare) / (self.disc_record.idlen+1)
+        self.id_per_zone = ((self.disc_record.secsize*8) - self.disc_record.zone_spare) // (self.disc_record.idlen+1)
 
     def show(self, unused=True):
         for zone in range(self.nzones):
@@ -54,14 +54,14 @@ class Map(object):
              ((self.disc_record.secsize*8-self.disc_record.zone_spare)*(zone+1)) - 480 - 1)
 
     def get_bit(self, zone, bit):
-        byte = (bit / 8) + (64 if zone == 0 else 4) # Zone 0 has the disc record
+        byte = (bit // 8) + (64 if zone == 0 else 4) # Zone 0 has the disc record
         shift = bit % 8
         data = self.data[byte+zone*self.disc_record.secsize]
         val = data & 1 << shift
         return 1 if val > 0 else 0
 
     def set_bit(self, zone, bit, val):
-        byte = (bit / 8) + (64 if zone == 0 else 4) # Zone 0 has the disc record
+        byte = (bit // 8) + (64 if zone == 0 else 4) # Zone 0 has the disc record
         shift = bit % 8
         old_data = self.data[byte+zone*self.disc_record.secsize]
         new_data = old_data & ( 0xff ^ 1<<shift) | ((1<<shift) if val else 0)
@@ -134,9 +134,9 @@ class Map(object):
             return
 
         if free_offset:
-            print("Zone %d (FreeLink = %x - %d bits)" % (zone, free_link, free_offset))
+            print(("Zone %d (FreeLink = %x - %d bits)" % (zone, free_link, free_offset)))
         else:
-            print("Zone %d (FreeLink = %x - No free space)" % (zone, free_link))
+            print(("Zone %d (FreeLink = %x - No free space)" % (zone, free_link)))
 
         bit = 0
         while True:
@@ -149,7 +149,7 @@ class Map(object):
 
            while (self.get_bit(zone, bit) == 0):
                if bit > last_bit:
-                   print "** Stop bit not found before end of zone."
+                   print("** Stop bit not found before end of zone.")
                    break
                bit += 1
 
@@ -157,8 +157,8 @@ class Map(object):
            disc_start = (start+bits_before)*self.disc_record.bpmb
            disc_end   = (bit  +bits_before)*self.disc_record.bpmb
 
-           print("  Fragment ID: %x (bits %d to %d) [disc %x to %x (%d)]" %
-               (frag_id, start, bit, disc_start, disc_end, disc_end-disc_start))
+           print(("  Fragment ID: %x (bits %d to %d) [disc %x to %x (%d)]" %
+               (frag_id, start, bit, disc_start, disc_end, disc_end-disc_start)))
 
            if bit+bits_before >= last_bit:
                break
@@ -197,7 +197,7 @@ class Map(object):
     def find_fragment(self, fragment_id, length = None):
         addresses = [] # List of (start,end) disc addresses
 
-        start_zone = fragment_id / self.id_per_zone
+        start_zone = fragment_id // self.id_per_zone
         zone = start_zone
 
         while True:
@@ -254,25 +254,26 @@ class BigDir(object):
             return s
 
         def show(self):
-            print '{0:<15} {1:08x} {2:08x} {3:12} {4} {5:x}'.format(\
-                   self.name, self.loadaddr, self.execaddr, self.length,
-                   self.attr_str(), self.ind_disc_addr)
+            print(self.name, self.attr_str())
+            print('{0:<15} {1:08x} {2:08x} {3:12} {4} {5:x}'.format(\
+                  self.name.decode('latin-1'), self.loadaddr, self.execaddr,
+                  self.length, self.attr_str(), self.ind_disc_addr))
 
     def __init__(self, data):
         self.sequence, sbpr, name_len, self.size, \
         entries, names_size, self.parent_id = struct.unpack("Bxxx4sIIIII",data[0:0x1c])
 
-        if sbpr != 'SBPr':
+        if sbpr != b'SBPr':
             raise RuntimeError("Invalid directory start marker ({0})".format(sbpr))
 
         self.name = data[0x1c:0x1c+name_len]
 
-        heap_start = (entries*0x1c) + ((0x1c+name_len+4)/4)*4
+        heap_start = (entries*0x1c) + ((0x1c+name_len+4)//4)*4
         heap_end   = heap_start+names_size
         heap_data  = data[heap_start:heap_end]
 
         self.entries = []
-        data_start = ((0x1C+name_len+4)/4)*4
+        data_start = ((0x1C+name_len+4)//4)*4
 
         for entry in range(0,entries):
             start = data_start + (entry*0x1C)
@@ -281,11 +282,11 @@ class BigDir(object):
 
         oven, end_seq, check = struct.unpack("4sBxxB",data[-8:])
 
-        if oven != 'oven':
+        if oven != b'oven':
             raise RuntimeError("Invalid directory end marker ({0})".format(oven))
 
         tail = data[-8:]
-        calc = dir_check_words(data[0:heap_end], heap_end/4, 0)
+        calc = dir_check_words(data[0:heap_end], heap_end//4, 0)
         calc = dir_check_words(tail[0:4], 1, calc)
         calc = dir_check_bytes(tail[4:7], 3, calc)
         calc = (calc << 0 & 0xff) ^ (calc >> 8 & 0xff) ^ (calc >> 16 & 0xff) ^ (calc >> 24 & 0xff)
@@ -295,26 +296,26 @@ class BigDir(object):
 
     def data(self):
         # TODO: Currently only handles 2048 byte directories.
-        data = ''
+        data = b''
 
-        name_heap = ''
+        name_heap = b''
         heap_lookup = {}
         for entry in self.entries:
            heap_lookup[self.entries.index(entry)] = len(name_heap)
-           name_heap += entry.name+'\x0d'
+           name_heap += entry.name+b'\x0d'
 
         # Word-justify it
         while len(name_heap) % 4 != 0:
-            name_heap += '\x00'
+            name_heap += b'\x00'
 
         seq = self.sequence
 
-        data = struct.pack('BBBB4sIIIII',seq,0,0,0,'SBPr',
+        data = struct.pack('BBBB4sIIIII',seq,0,0,0,b'SBPr',
             len(self.name),2048,len(self.entries),len(name_heap),self.parent_id)
 
-        dir_name = self.name+'\x0d'
+        dir_name = self.name+b'\x0d'
         while len(dir_name) % 4 != 0:
-            dir_name += '\x00'
+            dir_name += b'\x00'
 
         data += dir_name
 
@@ -329,9 +330,9 @@ class BigDir(object):
 
         data += name_heap
 
-        check = dir_check_words(data, len(data)/4, 0)
+        check = dir_check_words(data, len(data)//4, 0)
 
-        tail = struct.pack('4sBBB','oven',seq,0,0)
+        tail = struct.pack('4sBBB',b'oven',seq,0,0)
 
         check = dir_check_words(tail[0:4], 1, check)
         check = dir_check_bytes(tail[4:7], 3, check)
@@ -339,13 +340,13 @@ class BigDir(object):
         check = (check << 0 & 0xff) ^ (check >> 8 & 0xff) ^ (check >> 16 & 0xff) ^ (check >> 24 & 0xff)
 
         while len(data) < 2040:
-            data += '\x00'
+            data += b'\x00'
 
-        data += tail + chr(check)
+        data += tail + bytes([check])
         return data
 
     def show(self):
-        print "Directory: {0} ({1})".format(self.name,self.sequence)
+        print(("Directory: {0} ({1})".format(self.name,self.sequence)))
         for entry in self.entries:
             entry.show()
 

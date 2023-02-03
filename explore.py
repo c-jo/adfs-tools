@@ -32,7 +32,7 @@ while not quit:
             path_str += '.'
         path_str += item.name
 
-    cmd = raw_input(path_str+"> ").split()
+    cmd = input(path_str+"> ").split()
 
     if cmd[0] == 'cat' or cmd[0] == '.':
         csd.show()
