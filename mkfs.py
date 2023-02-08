@@ -23,11 +23,11 @@ MAPSIZE_MAX = 32*1024*1024 # 32MB
 """
 
 ####
-disc_sectors = 234441648
-log2_secsize = 9
-####
-#disc_sectors = 488377323//2
+#disc_sectors = 234441648
 #log2_secsize = 9
+####
+disc_sectors = 1953525168>>3 # Convert to 4K
+log2_secsize = 12
 ####
 
 def make_shape(sectors):
