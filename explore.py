@@ -11,6 +11,7 @@ if len(sys.argv) != 2:
 
 fd = open(sys.argv[1], "rb")
 fs_map = get_map(fd)
+fs_map.disc_record.show()
 
 root_fragment  = fs_map.disc_record.root >> 8
 root_locations = fs_map.find_fragment(root_fragment, fs_map.disc_record.root_size)
