@@ -35,6 +35,9 @@ def make_shape(sectors):
     best_wasted = 0xffffffff
     best = None
     for secs,heads in product(range(63,15,-1), range(255,15,-1)):
+        cyls = sectors / (secs*heads)
+        if cyls > 65535:
+            continue
         wasted = sectors % (secs*heads)
         if (wasted < best_wasted):
             best_wasted = wasted
