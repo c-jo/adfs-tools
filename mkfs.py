@@ -77,7 +77,7 @@ print("Disc has {} sectors of {} bytes - Capacity {:.1f} GB".format(
      disc_sectors, 1<<log2_secsize,
      (disc_sectors << log2_secsize)/1000/1000/1000))
 
-allocs = []
+allocs = {} # LFAU -> Shape
 
 # Find what log2 bpmb / zones combinations we can use
 for log2bpmb in range(7,26):
@@ -90,9 +90,16 @@ for log2bpmb in range(7,26):
     for zones in range(zones_guess, zones_guess + 10 + zones_guess // 20): 
         alloc = find_alloc(disc_sectors, log2_secsize, zones, log2bpmb)
         if alloc:
-            allocs.append(alloc)
+            allocs[1<<log2bpmb] = alloc
             break
 
-for alloc in allocs:
-     print("LFAU: {}K, map size: {}K ({} zones)".format((1<<alloc[2])/1024, (alloc[0]<<log2_secsize)/1024, alloc[0]))
+for lfau, alloc in allocs.items():
+     print("LFAU: {}K, map size: {}K ({} zones)".format(
+         lfau/1024, (alloc[0]<<log2_secsize)/1024, alloc[0]))
 
+shape = allocs[128*1024]
+if not shape:
+    shape = allocs[1024*input("LFAU (in K): ")]
+
+print(make_shape(disc_sectors))
+print(shape)
