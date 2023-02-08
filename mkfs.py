@@ -35,6 +35,9 @@ def make_shape(sectors):
     best_wasted = 0xffffffff
     best = None
     for secs,heads in product(range(63,15,-1), range(255,15,-1)):
+        cyls = sectors / (secs*heads)
+        if cyls > 65535:
+            continue
         wasted = sectors % (secs*heads)
         if (wasted < best_wasted):
             best_wasted = wasted
@@ -74,8 +77,11 @@ def find_alloc(sectors, log2ss, zones, log2bpmb):
 
 
 print("Disc has {} sectors of {} bytes - Capacity {:.1f} GB".format(
-     disc_sectors, 1<<log2_secsize,
-     (disc_sectors << log2_secsize)/1000/1000/1000))
+    disc_sectors, 1<<log2_secsize,
+    (disc_sectors << log2_secsize)/1000/1000/1000))
+
+print("Using shape {} sectors, {} heads, {} cylinders.".format(
+    *make_shape(disc_sectors)))
 
 allocs = {} # LFAU -> Shape
 
