@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from utils import get_map
-from objects import BigDir
+from objects import BigDir, BootBlock
 import sys
 
 if len(sys.argv) != 2:
@@ -10,11 +10,25 @@ if len(sys.argv) != 2:
     exit(1)
 
 fd = open(sys.argv[1], "rb")
+fd.seek(0xc00)
+bb = BootBlock.from_buffer_copy(fd.read(0x200))
+fd.seek(0)
+
+print(bb.checksum)
+print(bb.calculate_checksum())
+
 fs_map = get_map(fd)
 fs_map.disc_record.show()
+print(fs_map.cross_check())
+
+# fs_map.show(False)
 
 root_fragment  = fs_map.disc_record.root >> 8
 root_locations = fs_map.find_fragment(root_fragment, fs_map.disc_record.root_size)
+
+print("Root fragment: {:x} at {}".format(root_fragment,root_locations))
+
+print(fs_map.disc_to_map(root_locations[0][0]))
 
 fd.seek((root_locations[0])[0])
 
@@ -31,7 +45,7 @@ while not quit:
     for item in path:
         if path_str != '':
             path_str += '.'
-        path_str += item.name
+        path_str += item.name.decode('latin-1')
 
     cmd = input(path_str+"> ").split()
 
@@ -57,6 +71,20 @@ while not quit:
         if len(path) > 1:
             path = path[:-1]
             csd = path[-1]
+
+
+    if cmd[0] == 'map':
+        with open("mapdump","wb") as f:
+            f.write(fs_map.data)
+        fs_map.show(False)
+
+    if cmd[0] == 'zone':
+        zone = int(cmd[1])
+        print("Zone: {} {} to {}".format(zone, *fs_map.zone_range(zone)))
+        print("{:02x} {:02x} {:02x} {:02x}".format(*fs_map.zone_header(zone)))
+        fs_map.show_zone(zone, True)
+        print("Zone check (calclated): {:02x}".format(fs_map.calc_zone_check(zone)))
+
 
     if cmd[0] == 'quit' or cmd[0] == 'exit':
         quit = True

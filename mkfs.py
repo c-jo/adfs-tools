@@ -1,12 +1,14 @@
 #! /usr/bin/python
 from itertools import product
 
-from objects import DiscRecord
+from array import array
+from objects import DiscRecord, Map, BigDir, BootBlock
 import struct
+import ctypes
 
 ZONE0BITS = 60*8 # Bits used in Zone 0
 IDLEN_MAX = 21
-MAPSIZE_MAX = 32*1024*1024 # 32MB
+MAPSIZE_MAX = 128*1024*1024
 
 """
 #define LOG2SECTORSIZE 10
@@ -76,12 +78,19 @@ def find_alloc(sectors, log2ss, zones, log2bpmb):
                 return (zones, zonespare, log2bpmb, idlen)
 
 
+
+## Start
 print("Disc has {} sectors of {} bytes - Capacity {:.1f} GB".format(
     disc_sectors, 1<<log2_secsize,
     (disc_sectors << log2_secsize)/1000/1000/1000))
 
+dr = DiscRecord()
+dr.log2secsize = log2_secsize
+dr.disc_size = disc_sectors << log2_secsize
+dr.secspertrack, dr.heads, cylinders = make_shape(disc_sectors)
+
 print("Using shape {} sectors, {} heads, {} cylinders.".format(
-    *make_shape(disc_sectors)))
+    dr.secspertrack, dr.heads, cylinders))
 
 allocs = {} # LFAU -> Shape
 
@@ -99,13 +108,85 @@ for log2bpmb in range(7,26):
             allocs[1<<log2bpmb] = alloc
             break
 
-for lfau, alloc in allocs.items():
-     print("LFAU: {}K, map size: {}K ({} zones)".format(
-         lfau/1024, (alloc[0]<<log2_secsize)/1024, alloc[0]))
+alloc = allocs[32*1024]
 
-shape = allocs[128*1024]
-if not shape:
-    shape = allocs[1024*input("LFAU (in K): ")]
+if not alloc:
+    for lfau, alloc in allocs.items():
+         print("LFAU: {}K, map size: {}K ({} zones)".format(
+             lfau/1024, (alloc[0]<<log2_secsize)/1024, alloc[0]))
+    alloc = allocs[1024*int(input("LFAU (in K): "))]
 
-print(make_shape(disc_sectors))
-print(shape)
+dr.nzones, dr.zone_spare, dr.log2bpmb, dr.idlen = alloc
+dr.sharesize = 0 ## TODO: calculate thie
+dr.disc_name = b"Filecore00"
+
+dr.show()
+map_zone, map_address, map_size = dr.map_info()
+print("Map zone: {}, address: {}, size: {} ({} map bits)".format(
+    map_zone, map_address, map_size, map_size / dr.bpmb))
+
+map = Map(b'\0'*map_size)
+map.disc_record = dr
+map.clear()
+
+map_start = map.disc_to_map(map_address)
+map_end   = map.disc_to_map(map_address+(map_size*2)-1) # Two copies
+
+if map_start[0] != map_end[0]:
+    print("Map spans multiple zones.")
+    exit(2)
+
+print("Map is {} sectors map bits {} to {}"
+    .format(map_size/dr.secsize, map_start[1], map_end[1]))
+
+
+# The root goes after the maps
+root_address = map_address + (map_size*2)
+# Make sure it's sector aligned
+while root_address % dr.secsize != 0 or map.disc_to_map(root_address)[1] <= map_end[1]:
+    root_address += 1
+
+print("Root address: {}".format(root_address))
+
+root_zone, root_offset = map.disc_to_map(root_address)
+
+ids_per_zone = (dr.secsize * 8 - dr.zone_spare) // (dr.idlen + 1)
+root_frag_id = root_zone * ids_per_zone
+
+root_map_bits = max(dr.idlen+1, 2048 // dr.bpmb)
+
+print("Root is in zone {} offset {}, fragment id {:x}".format(
+    root_zone, root_offset,root_frag_id))
+
+dr.root = (root_frag_id << 8) + 1
+dr.root_size = 2048
+map.disc_record = dr
+
+map.allocate(0, 2, 0, dr.idlen)
+map.allocate(map_zone, 2, map_start[1], map_end[1])
+
+print("Root takes {} map bits.".format(root_map_bits))
+map.allocate(root_zone, root_frag_id, root_offset, root_offset+root_map_bits)
+
+last_zone, overhang_start = map.disc_to_map(dr.disc_size)
+map.allocate(last_zone, 1, overhang_start, dr.secsize*8-dr.zone_spare-1)
+
+root = BigDir()
+root.parent_id = dr.root
+
+map.show_zone(root_zone, True)
+print("Map crosscheck: {:x}".format(map.cross_check()))
+
+bootrec = BootBlock(dr)
+print(hex(ctypes.sizeof(bootrec)))
+
+with open("/dev/sdb", "w+b") as f:
+    f.seek(0xc00)
+    f.write(bootrec)
+    f.seek(map_address)
+    f.write(map.data)
+    f.write(map.data)
+    f.seek(root_address)
+    f.write(root.data())
+    
+
