@@ -28,14 +28,14 @@ length_sec = p1_data[9]
 start  = start_sec * SECSIZE
 length = length_sec * SECSIZE
 
-print "Loader starts at sector {0} and is {1} sector ({2} bytes) long.".format(start_sec,length_sec,length)
+print("Loader starts at sector {0} and is {1} sector ({2} bytes) long.".format(start_sec,length_sec,length))
 
 fd.seek(start)
 data = fd.read(length)
 
 fd.close()
 
-print "Saving 'Loader' file to",sys.argv[2]
+print("Saving 'Loader' file to",sys.argv[2])
 fd = open(sys.argv[2],"wb")
 fd.write(data)
 fd.close()

@@ -1,6 +1,5 @@
 #! /usr/bin/python
 
-from datetime import datetime
 from utils import get_map
 from objects import BigDir, BootBlock
 import sys
