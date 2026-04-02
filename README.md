@@ -182,9 +182,6 @@ Variable:     File data and subdirectories
 
 ## Known Issues
 
-- `get_loader.py`, `put_loader.py`, and `claim_frags.py` contain some
-  Python 2 syntax (print statements without parentheses) and may need
-  updating for Python 3.
 - The tools assume standard 512-byte sector MBR layouts for partition
   table handling.
 - `fcform.py` currently hard-codes the disc name to `"Turnips  "`.
