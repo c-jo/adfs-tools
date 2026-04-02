@@ -1,6 +1,5 @@
 #! /usr/bin/python
 
-from datetime import datetime
 from utils import get_map
 from objects import BigDir
 import sys
@@ -15,7 +14,7 @@ def split_internal_disc_address(internal_disc_address):
     return (fragment_id, sector_offset)
 
 def walk(directory, parent="$"):
-    print("{}.{}".format(parent, directory.name))
+    print("{}.{}".format(parent, directory.name.decode('latin-1')))
     for entry in directory.entries:
         if entry.attribs & 1<<3:
             frag_id, offset = split_internal_disc_address(entry.ind_disc_addr)
@@ -38,9 +37,9 @@ def walk(directory, parent="$"):
 
             data = data[:entry.length]
 
-            walk(BigDir(data), parent+'.'+entry.name)
+            walk(BigDir(data), parent+'.'+entry.name.decode('latin-1'))
 
-fd = open(sys.argv[1])
+fd = open(sys.argv[1], "rb")
 fs_map = get_map(fd)
 
 root_frag_id    = fs_map.disc_record.root >> 8

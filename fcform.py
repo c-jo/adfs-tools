@@ -27,7 +27,7 @@ def make_shape(sectors):
     best_wasted = 0xffffffff
     best = None
     for secs,heads in product(range(63,15,-1), range(255,15,-1)):
-        cyls = sectors / (secs*heads)
+        cyls = sectors // (secs*heads)
         if cyls > 65535:
             continue
         wasted = sectors % (secs*heads)
@@ -41,7 +41,7 @@ def check_alloc(sectors, log2ss, zones, zonespare, log2bpmb, idlen):
     disc_allocs = (sectors << log2ss) // (1 << log2bpmb)
     bpzm = 8 * (1 << log2ss) - zonespare # Bits per zone map
     map_allocs = (bpzm * zones) - ZONE0BITS
-    idpz = bpzm / (idlen+1) # IDs per Zone
+    idpz = bpzm // (idlen+1) # IDs per Zone
 
     if map_allocs < disc_allocs:
         return False # Map doens't cover disc
@@ -63,7 +63,7 @@ def find_alloc(sectors, log2ss, zones, log2bpmb):
     """Find an allocation for the given zones/log2bpmb, or 
        None if one cannot be found."""
     for zonespare in range(32,64): # 32 to ZoneBits%-Zone0Bits%-8*8
-        for idlen in range(log2_secsize, IDLEN_MAX+1):
+        for idlen in range(log2ss, IDLEN_MAX+1):
             if check_alloc(sectors, log2ss, zones, zonespare, log2bpmb, idlen):
                 return (zones, zonespare, log2bpmb, idlen)
 
@@ -113,17 +113,17 @@ alloc = allocs[args.lfau*1024] if args.lfau else None
 if not alloc:
     for lfau, alloc in allocs.items():
          print("LFAU: {}K, map size: {}K ({} zones)".format(
-             lfau/1024, (alloc[0]<<log2_secsize)/1024, alloc[0]))
+             lfau//1024, (alloc[0]<<log2_secsize)//1024, alloc[0]))
     alloc = allocs[1024*int(input("LFAU (in K): "))]
 
 dr.nzones, dr.zone_spare, dr.log2bpmb, dr.idlen = alloc
-dr.sharesize = 0 ## TODO: calculate thie
+dr.log2share = 0 ## TODO: calculate this
 dr.disc_name = b"Turnips  "
 
 # dr.show()
 map_zone, map_address, map_size = dr.map_info()
 print("Map zone: {}, address: {}, size: {} ({} map bits)".format(
-    map_zone, map_address, map_size, map_size / dr.bpmb))
+    map_zone, map_address, map_size, map_size // dr.bpmb))
 
 map = Map(b'\0'*map_size)
 map.disc_record = dr
@@ -137,7 +137,7 @@ if map_start[0] != map_end[0]:
     exit(2)
 
 print("Map is {} sectors map bits {} to {}"
-    .format(map_size/dr.secsize, map_start[1], map_end[1]))
+    .format(map_size//dr.secsize, map_start[1], map_end[1]))
 
 
 # The root goes after the maps

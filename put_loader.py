@@ -14,7 +14,7 @@ fd = open(sys.argv[2], "rb")
 dos_data = fd.read(DOS_MAX)
 fd.close()
 
-print "DOS area is {0} bytes.".format(len(dos_data))
+print("DOS area is {0} bytes.".format(len(dos_data)))
 
 fd = open(sys.argv[1], "r+b")
 
@@ -22,17 +22,17 @@ fs_map = get_map(fd)
 lfau = fs_map.disc_record.bpmb
 min_frag = (fs_map.disc_record.idlen+1)*fs_map.disc_record.bpmb
 
-dos_start = min_frag / fs_map.disc_record.secsize
-dos_secs  = len(dos_data) / fs_map.disc_record.secsize
+dos_start = min_frag // fs_map.disc_record.secsize
+dos_secs  = len(dos_data) // fs_map.disc_record.secsize
 
-print "Disc has LFAU of {}, minium fragment size {}K.".format(lfau,min_frag/1024)
-print "Loader area starts at sector {}".format(dos_start)
+print("Disc has LFAU of {}, minium fragment size {}K.".format(lfau,min_frag//1024))
+print("Loader area starts at sector {}".format(dos_start))
 
 fd.seek(0, 2)
 disc_size = fd.tell()
 
 adfs_start = dos_start+dos_secs+1
-adfs_secs  = disc_size / fs_map.disc_record.secsize - dos_secs
+adfs_secs  = disc_size // fs_map.disc_record.secsize - dos_secs
 
 fd.seek(0, 0)
 
@@ -60,7 +60,7 @@ p4_new = struct.pack("BBBBBBBBII", 0x00,\
     chs_dummy[0],chs_dummy[1],chs_dummy[2],
     adfs_start, adfs_secs)
 
-new_part = part_table[0:0x1be] + p1_new + p2_new + p3_new + p4_new + "\x55\xaa"
+new_part = part_table[0:0x1be] + p1_new + p2_new + p3_new + p4_new + b"\x55\xaa"
 
 fd.seek(0, 0)
 fd.write(new_part)

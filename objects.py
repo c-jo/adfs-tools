@@ -178,14 +178,14 @@ class Map(object):
         byte = (bit // 8) + (64 if zone == 0 else 4) # Zone 0 has the disc record
         shift = bit % 8
         data = self.data[byte+zone*self.disc_record.secsize]
-        val = data & 1 << shift
+        val = data & (1 << shift)
         return 1 if val > 0 else 0
 
     def set_bit(self, zone, bit, val):
         byte = (bit // 8) + (64 if zone == 0 else 4) # Zone 0 has the disc record
         shift = bit % 8
         old_data = self.data[byte+zone*self.disc_record.secsize]
-        new_data = old_data & ( 0xff ^ 1<<shift) | ((1<<shift) if val else 0)
+        new_data = (old_data & (0xff ^ (1 << shift))) | ((1 << shift) if val else 0)
         self.data[byte+zone*self.disc_record.secsize] = new_data
 
     def disc_to_map(self, disc_address):
