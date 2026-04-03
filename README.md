@@ -76,7 +76,7 @@ python fcform.py <device> <sectors> [--4k] [--lfau <size_in_K>]
 - `device` — Output file or device path.
 - `sectors` — Total number of sectors on the disc.
 - `--4k` — Use 4096-byte sectors instead of the default 512-byte sectors.
-- `--lfau` — Set a specific LFAU (Largest File Allocation Unit) in kilobytes.
+- `--lfau` — Set a specific LFAU (Large File Allocation Unit) in kilobytes.
   If not specified, displays available options and prompts for a choice.
 
 #### `explore.py` — Interactive disc explorer
@@ -154,7 +154,7 @@ with the following key features:
   of 0 indicates free space, 1 is used for disc defects, and 2 is reserved
   for the map itself.
 
-- **LFAU (Largest File Allocation Unit)**: Each map bit represents this many
+- **LFAU (Large File Allocation Unit)**: Each map bit represents this many
   bytes of disc space (`bytes_per_map_bit` or `bpmb`). Larger values mean
   less map overhead but more wasted space in small files.
 
