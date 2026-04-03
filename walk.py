@@ -1,6 +1,6 @@
 #! /usr/bin/python
 
-from utils import get_map
+from utils import get_map, DiscImage
 from objects import BigDir
 import sys
 
@@ -28,8 +28,7 @@ def walk(directory, parent="$"):
             locations = fs_map.find_fragment(frag_id, entry.length)
             data = None
             for start,end in locations:
-                fd.seek(start)
-                frag_data = fd.read(end-start)
+                frag_data = disc.read_at(start, end-start)
                 if data:
                     data += frag_data
                 else:
@@ -39,16 +38,14 @@ def walk(directory, parent="$"):
 
             walk(BigDir(data), parent+'.'+entry.name.decode('latin-1'))
 
-fd = open(sys.argv[1], "rb")
-fs_map = get_map(fd)
+disc = DiscImage(open(sys.argv[1], "rb"))
+fs_map = get_map(disc)
 
 root_frag_id    = fs_map.disc_record.root >> 8
 root_sec_offset = fs_map.disc_record.root &  0xff
 
 root_locations = fs_map.find_fragment(root_frag_id, fs_map.disc_record.root_size)
 
-fd.seek((root_locations[0])[0])
-
-root = BigDir(fd.read(fs_map.disc_record.root_size))
+root = BigDir(disc.read_at((root_locations[0])[0], fs_map.disc_record.root_size))
 walk(root)
 

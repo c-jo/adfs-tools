@@ -8,6 +8,7 @@ import argparse
 from array import array
 from objects import DiscRecord, Map, BigDir, BootBlock
 from itertools import product
+from utils import DiscImage
 
 
 ZONE0BITS = 60*8 # Bits used in Zone 0
@@ -179,11 +180,9 @@ root.parent_id = dr.root
 bootrec = BootBlock(dr)
 
 with open(args.device, "w+b") as f:
-    f.seek(0xc00)
-    f.write(bootrec)
-    f.seek(map_address)
-    f.write(map.data)
-    f.write(map.data)
-    f.seek(root_address)
-    f.write(root.data())
+    disc = DiscImage(f)
+    disc.write_at(0xc00, bootrec)
+    disc.write_at(map_address, map.data)
+    disc.write_at(map_address + map_size, map.data)
+    disc.write_at(root_address, root.data())
 

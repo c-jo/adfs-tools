@@ -2,7 +2,7 @@
 
 import sys
 from objects import Map
-from utils import find_map
+from utils import find_map, DiscImage
 
 fd = open("Loader", "rb")
 fd.seek(0,2)
@@ -15,10 +15,9 @@ if len(sys.argv) != 2:
     print("Usage: claim_frags <device>")
     exit(1)
 
-fd = open(sys.argv[1], "r+b")
-map_address, map_length = find_map(fd)
-fd.seek(map_address)
-fs_map = Map(fd.read(map_length))
+disc = DiscImage(open(sys.argv[1], "r+b"))
+map_address, map_length = find_map(disc)
+fs_map = Map(disc.read_at(map_address, map_length))
 
 loader_start = (fs_map.disc_record.idlen+1) * fs_map.disc_record.bpmb
 
@@ -65,6 +64,5 @@ while True:
 
     zone += 1
 
-fd.seek(map_address)
-fd.write(fs_map.data.tobytes())
+disc.write_at(map_address, fs_map.data.tobytes())
 

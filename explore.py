@@ -1,6 +1,6 @@
 #! /usr/bin/python
 
-from utils import get_map
+from utils import get_map, DiscImage
 from objects import BigDir, BootBlock
 import sys
 import cmd
@@ -9,20 +9,16 @@ if len(sys.argv) != 2:
     print("Usage: explore <device>")
     exit(1)
 
-fd = open(sys.argv[1], "rb")
-fd.seek(0xc00)
-bb = BootBlock.from_buffer_copy(fd.read(0x200))
-fd.seek(0)
+disc = DiscImage(open(sys.argv[1], "rb"))
+bb = BootBlock.from_buffer_copy(disc.read_at(0xc00, 0x200))
 
-fs_map = get_map(fd)
+fs_map = get_map(disc)
 # fs_map.disc_record.show()
 
 root_fragment  = fs_map.disc_record.root >> 8
 root_locations = fs_map.find_fragment(root_fragment, fs_map.disc_record.root_size)
 
-fd.seek((root_locations[0])[0])
-
-root = BigDir(fd.read(fs_map.disc_record.root_size))
+root = BigDir(disc.read_at((root_locations[0])[0], fs_map.disc_record.root_size))
 
 csd = root
 path = [root]
@@ -45,9 +41,7 @@ class Shell(cmd.Cmd):
             return
 
         location = fs_map.find_fragment(dirent.ind_disc_addr >> 8, dirent.length)[0]
-        fd.seek(location[0])
-
-        csd = BigDir(fd.read(dirent.length))
+        csd = BigDir(disc.read_at(location[0], dirent.length))
         path.append(csd)
 
     def do_up(self, arg):
