@@ -5,6 +5,8 @@ import random
 
 from functools import reduce
 
+BOOT_BLOCK_ADDRESS = 0xc00
+
 def dir_check_words(data, count, dircheck):
     for word in struct.unpack("{0}I".format(count), data):
         dircheck = word ^ ( ((dircheck >> 13) & 0xffffffff) | ((dircheck << 19) & 0xffffffff) )

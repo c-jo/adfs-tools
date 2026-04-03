@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 from utils import get_map, DiscImage
-from objects import BigDir, BootBlock
+from objects import BigDir, BootBlock, BOOT_BLOCK_ADDRESS
 import sys
 import cmd
 
@@ -10,7 +10,7 @@ if len(sys.argv) != 2:
     exit(1)
 
 disc = DiscImage(open(sys.argv[1], "rb"))
-bb = BootBlock.from_buffer_copy(disc.read_at(0xc00, 0x200))
+bb = BootBlock.from_buffer_copy(disc.read_at(BOOT_BLOCK_ADDRESS, 0x200))
 
 fs_map = get_map(disc)
 # fs_map.disc_record.show()

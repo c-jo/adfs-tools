@@ -1,4 +1,4 @@
-from objects import Map, DiscRecord
+from objects import Map, DiscRecord, BOOT_BLOCK_ADDRESS
 
 
 class DiscImage:
@@ -21,7 +21,7 @@ class DiscImage:
 
 
 def find_map(disc):
-    disc_record = DiscRecord.from_bytes(disc.read_at(0xc00 + 0x1c0, 60))
+    disc_record = DiscRecord.from_bytes(disc.read_at(BOOT_BLOCK_ADDRESS + 0x1c0, 60))
 
     map_address = ((disc_record.nzones // 2)*(8*disc_record.secsize-disc_record.zone_spare)-480)*disc_record.bpmb;
     map_length  = disc_record.secsize * disc_record.nzones

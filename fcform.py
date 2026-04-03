@@ -6,7 +6,7 @@ import ctypes
 import argparse
 
 from array import array
-from objects import DiscRecord, Map, BigDir, BootBlock
+from objects import DiscRecord, Map, BigDir, BootBlock, BOOT_BLOCK_ADDRESS
 from itertools import product
 from utils import DiscImage
 
@@ -181,7 +181,7 @@ bootrec = BootBlock(dr)
 
 with open(args.device, "w+b") as f:
     disc = DiscImage(f)
-    disc.write_at(0xc00, bootrec)
+    disc.write_at(BOOT_BLOCK_ADDRESS, bootrec)
     disc.write_at(map_address, map.data)
     disc.write_at(map_address + map_size, map.data)
     disc.write_at(root_address, root.data())
