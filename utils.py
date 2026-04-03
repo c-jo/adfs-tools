@@ -1,8 +1,27 @@
-from objects import Map, DiscRecord
+from objects import Map, DiscRecord, BOOT_BLOCK_ADDRESS
 
-def find_map(fd):
-    fd.seek(0xc00 + 0x1c0)
-    disc_record = DiscRecord.from_bytes(fd.read(60))
+
+class DiscImage:
+    """Abstracts disc access operations on a file-like object."""
+
+    def __init__(self, fd):
+        self._fd = fd
+
+    def read_at(self, address, length):
+        self._fd.seek(address)
+        return self._fd.read(length)
+
+    def write_at(self, address, data):
+        self._fd.seek(address)
+        self._fd.write(data)
+
+    def size(self):
+        self._fd.seek(0, 2)
+        return self._fd.tell()
+
+
+def find_map(disc):
+    disc_record = DiscRecord.from_bytes(disc.read_at(BOOT_BLOCK_ADDRESS + 0x1c0, 60))
 
     map_address = ((disc_record.nzones // 2)*(8*disc_record.secsize-disc_record.zone_spare)-480)*disc_record.bpmb;
     map_length  = disc_record.secsize * disc_record.nzones
@@ -11,10 +30,9 @@ def find_map(fd):
 
     return map_address, map_length
 
-def get_map(fd):
-    map_address, map_length = find_map(fd)
+def get_map(disc):
+    map_address, map_length = find_map(disc)
     # print("Map is at {}, length {}".format(map_address, map_length))
 
-    fd.seek(map_address)
-    return Map(fd.read(map_length))
+    return Map(disc.read_at(map_address, map_length))
 

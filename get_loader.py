@@ -2,6 +2,7 @@
 
 import sys
 import struct
+from utils import DiscImage
 
 SECSIZE = 512
 
@@ -9,11 +10,9 @@ if len(sys.argv) != 3:
     print("Usage: get_loader <device> <loader file>")
     exit(1)
 
-fd = open(sys.argv[1], "rb")
+disc = DiscImage(open(sys.argv[1], "rb"))
 
-fd.seek(0, 0)
-
-part_table = fd.read(512)
+part_table = disc.read_at(0, 512)
 
 p1 = part_table[0x1be:0x1be+16]
 p2 = part_table[0x1ce:0x1ce+16]
@@ -30,10 +29,7 @@ length = length_sec * SECSIZE
 
 print("Loader starts at sector {0} and is {1} sector ({2} bytes) long.".format(start_sec,length_sec,length))
 
-fd.seek(start)
-data = fd.read(length)
-
-fd.close()
+data = disc.read_at(start, length)
 
 print("Saving 'Loader' file to",sys.argv[2])
 fd = open(sys.argv[2],"wb")
