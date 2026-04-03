@@ -1,15 +1,19 @@
 #! /usr/bin/python
 
-from utils import get_map, DiscImage
+from utils import get_map, DiscImage, HDFImage
 from objects import BigDir, BootBlock, BOOT_BLOCK_ADDRESS
 import sys
 import cmd
+import os
 
 if len(sys.argv) != 2:
     print("Usage: explore <device>")
     exit(1)
 
-disc = DiscImage(open(sys.argv[1], "rb"))
+if os.path.splitext(sys.argv[1])[1] == '.hdf':
+    disc = HDFImage(open(sys.argv[1], "rb"))
+else:
+    disc = DiscImage(open(sys.argv[1], "rb"))
 bb = BootBlock.from_buffer_copy(disc.read_at(BOOT_BLOCK_ADDRESS, 0x200))
 
 fs_map = get_map(disc)
