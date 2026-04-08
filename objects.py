@@ -113,10 +113,28 @@ class Map(object):
             self.data = array.array('B', [0]*disc_record.secsize)
 
 
-    def __init__(self, data):
+    def __init__(self, data, validate=False):
         self.data = array.array('B')
         self.data.frombytes(data)
         self.disc_record = DiscRecord.from_bytes(data[4:64])
+        if validate:
+            self.validate()
+
+    def validate(self):
+        """Validate ZoneCheck bytes for each zone and the overall CrossCheck."""
+        for zone in range(self.nzones):
+            expected = self.calc_zone_check(zone)
+            actual   = self.data[zone * self.disc_record.secsize]
+            if actual != expected:
+                raise RuntimeError(
+                    "Zone {} ZoneCheck failed: expected 0x{:02x}, got 0x{:02x}".format(
+                        zone, expected, actual))
+
+        cross_xor = self.cross_check()
+        if cross_xor != 0xff:
+            raise RuntimeError(
+                "Map CrossCheck failed: XOR of cross-check bytes is 0x{:02x}, expected 0xff".format(
+                    cross_xor))
 
     @property
     def disc_record(self):
@@ -199,6 +217,13 @@ class Map(object):
             start, end = self.zone_range(zone)
             if start <= bit_in_map <= end:
                 return (zone, bit_in_map-start)
+
+        raise ValueError(
+            "Disc address 0x{:x} (map bit {}) is outside all zones "
+            "(map covers 0 to {})".format(
+                disc_address, bit_in_map,
+                (self.disc_record.secsize*8 - self.disc_record.zone_spare) * self.nzones - 481)
+        )
 
     def calc_zone_check(self, zone):
         sum_vector0 = 0
@@ -309,6 +334,7 @@ class Map(object):
         zone_start  = zone * self.disc_record.secsize
         bits_before = ((self.disc_record.secsize*8-self.disc_record.zone_spare)*zone) - (480 if zone > 0 else 0)
         free_link   =  (self.data[zone_start+2])*256+(self.data[zone_start+1])
+        last_bit    = ((self.disc_record.secsize*8-self.disc_record.zone_spare)*(zone+1)) - 480
 
         rv = []
 
@@ -322,6 +348,8 @@ class Map(object):
               bit += 1
 
            while (self.get_bit(zone, bit) == 0):
+               if bit >= last_bit:
+                   raise RuntimeError("Stop bit not found before end of zone %d" % zone)
                bit += 1
 
            bit += 1
@@ -434,7 +462,10 @@ class BigDir(object):
             raise RuntimeError("Invalid directory end marker ({0})".format(oven))
 
         tail = data[-8:]
-        calc = dir_check_words(data[0:heap_end], heap_end//4, 0)
+        words_end = (heap_end // 4) * 4
+        calc = dir_check_words(data[0:words_end], heap_end//4, 0)
+        if heap_end % 4:
+            calc = dir_check_bytes(data[words_end:heap_end], heap_end % 4, calc)
         calc = dir_check_words(tail[0:4], 1, calc)
         calc = dir_check_bytes(tail[4:7], 3, calc)
         calc = (calc << 0 & 0xff) ^ (calc >> 8 & 0xff) ^ (calc >> 16 & 0xff) ^ (calc >> 24 & 0xff)
@@ -443,9 +474,6 @@ class BigDir(object):
             raise RuntimeError("Directory check-byte failed.")
 
     def data(self):
-        # TODO: Currently only handles 2048 byte directories.
-        data = b''
-
         name_heap = b''
         heap_lookup = {}
         for entry in self.entries:
@@ -459,7 +487,7 @@ class BigDir(object):
         seq = self.sequence
 
         data = struct.pack('BBBB4sIIIII',seq,0,0,0,b'SBPr',
-            len(self.name),2048,len(self.entries),len(name_heap),self.parent_id)
+            len(self.name),self.size,len(self.entries),len(name_heap),self.parent_id)
 
         dir_name = self.name+b'\x0d'
         while len(dir_name) % 4 != 0:
@@ -474,9 +502,13 @@ class BigDir(object):
                                len(entry.name),
                                heap_lookup[self.entries.index(entry)])
 
-            #check = dir_check_words(data, 7, check)
-
         data += name_heap
+
+        # Entries + heap must fit within the directory leaving room for the 8-byte tail
+        if len(data) > self.size - 8:
+            raise RuntimeError(
+                "Directory data ({} bytes) exceeds directory size ({} bytes); "
+                "increase self.size before calling data()".format(len(data), self.size))
 
         check = dir_check_words(data, len(data)//4, 0)
 
@@ -487,7 +519,7 @@ class BigDir(object):
 
         check = (check << 0 & 0xff) ^ (check >> 8 & 0xff) ^ (check >> 16 & 0xff) ^ (check >> 24 & 0xff)
 
-        while len(data) < 2040:
+        while len(data) < self.size - 8:
             data += b'\x00'
 
         data += tail + bytes([check])
