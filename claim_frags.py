@@ -16,7 +16,7 @@ if len(sys.argv) != 2:
     print("Usage: claim_frags <device>")
     exit(1)
 
-disc = DiscImage(open(sys.argv[1], "r+b"))
+disc = DiscImage(sys.argv[1])
 map_address, map_length = find_map(disc)
 fs_map = Map(disc.read_at(map_address, map_length))
 

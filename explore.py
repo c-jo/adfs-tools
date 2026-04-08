@@ -12,9 +12,9 @@ if len(sys.argv) != 2:
     exit(1)
 
 if os.path.splitext(sys.argv[1])[1] == '.hdf':
-    disc = HDFImage(open(sys.argv[1], "rb"))
+    disc = HDFImage(sys.argv[1])
 else:
-    disc = DiscImage(open(sys.argv[1], "rb"))
+    disc = DiscImage(sys.argv[1], 'rb')
 bb = BootBlock.from_buffer_copy(disc.read_at(BOOT_BLOCK_ADDRESS, 0x200))
 
 fs_map = get_map(disc)

@@ -9,7 +9,7 @@ if len(sys.argv) != 2:
     print("Usage: add_loader <device>")
     exit(1)
 
-disc = DiscImage(open(sys.argv[1], "r+b"))
+disc = DiscImage(sys.argv[1])
 
 fs_map = get_map(disc)
 

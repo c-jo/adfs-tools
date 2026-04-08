@@ -191,6 +191,5 @@ if args.testmode:
     format(disc)
     disc.save(args.device)
 else:
-    with open(args.device, "w+b") as f:
-       disc = DiscImage(f)
-       format(disc)
+    disc = DiscImage(args.device, 'w+b')
+    format(disc)
