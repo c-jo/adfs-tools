@@ -17,7 +17,7 @@ fd.close()
 
 print("DOS area is {0} bytes.".format(len(dos_data)))
 
-disc = DiscImage(open(sys.argv[1], "r+b"))
+disc = DiscImage(sys.argv[1])
 
 fs_map = get_map(disc)
 lfau = fs_map.disc_record.bpmb

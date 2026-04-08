@@ -39,7 +39,7 @@ def walk(directory, parent="$"):
 
             walk(BigDir(data), parent+'.'+entry.name.decode('latin-1'))
 
-disc = DiscImage(open(sys.argv[1], "rb"))
+disc = DiscImage(sys.argv[1], 'rb')
 fs_map = get_map(disc)
 
 root_frag_id    = fs_map.disc_record.root >> 8

@@ -37,11 +37,15 @@ class Device:
 
 
 class DiscImage(Device):
-    """Abstracts disc access operations on a file-like object."""
+    """Abstracts disc access operations on a disc image file."""
 
-    def __init__(self, fd, sector_size=512):
+    def __init__(self, filename, mode='r+b', sector_size=512):
         # TODO: sector size is unknown here without reading the disc record first
-        self._fd = fd
+        import os
+        if isinstance(filename, (str, os.PathLike)):
+            self._fd = open(filename, mode)
+        else:
+            self._fd = filename
         self._sector_size = sector_size
 
     def read(self, lba, count):
@@ -61,9 +65,13 @@ class DiscImage(Device):
 class HDFImage(Device):
     """Abstracts disc access operations on a HDF file."""
 
-    def __init__(self, fd, sector_size=512):
+    def __init__(self, filename, mode='rb', sector_size=512):
         # TODO: sector size is unknown here without reading the disc record first
-        self._fd = fd
+        import os
+        if isinstance(filename, (str, os.PathLike)):
+            self._fd = open(filename, mode)
+        else:
+            self._fd = filename
         self._sector_size = sector_size
 
     def read(self, lba, count):

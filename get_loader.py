@@ -10,7 +10,7 @@ if len(sys.argv) != 3:
     print("Usage: get_loader <device> <loader file>")
     exit(1)
 
-disc = DiscImage(open(sys.argv[1], "rb"))
+disc = DiscImage(sys.argv[1], 'rb')
 
 part_table = disc.read_at(0, 512)
 
