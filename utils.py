@@ -1,44 +1,6 @@
 from objects import Map, DiscRecord, BOOT_BLOCK_ADDRESS
 
 
-class DiscImage:
-    """Abstracts disc access operations on a file-like object."""
-
-    def __init__(self, fd):
-        self._fd = fd
-
-    def read_at(self, address, length):
-        self._fd.seek(address)
-        return self._fd.read(length)
-
-    def write_at(self, address, data):
-        self._fd.seek(address)
-        self._fd.write(data)
-
-    def size(self):
-        self._fd.seek(0, 2)
-        return self._fd.tell()
-
-
-class HDFImage:
-    """Abstracts disc access operations on a HDF file."""
-
-    def __init__(self, fd):
-        self._fd = fd
-
-    def read_at(self, address, length):
-        self._fd.seek(address+0x200)
-        return self._fd.read(length)
-
-    def write_at(self, address, data):
-        self._fd.seek(address+0x200)
-        self._fd.write(data)
-
-    def size(self):
-        self._fd.seek(0, 2)
-        return self._fd.tell()-0x200
-
-
 def find_map(disc):
     disc_record = DiscRecord.from_bytes(disc.read_at(BOOT_BLOCK_ADDRESS + 0x1c0, 60))
 

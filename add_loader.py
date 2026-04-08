@@ -2,7 +2,8 @@
 
 import sys
 from objects import BigDir
-from utils import get_map, DiscImage
+from utils import get_map
+from device import DiscImage
 
 if len(sys.argv) != 2:
     print("Usage: add_loader <device>")

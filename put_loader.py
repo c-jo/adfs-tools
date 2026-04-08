@@ -2,7 +2,8 @@
 
 import sys
 import struct
-from utils import get_map, DiscImage
+from utils import get_map
+from device import DiscImage
 
 DOS_MAX = 128*1024*1024
 
