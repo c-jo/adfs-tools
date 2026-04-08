@@ -8,7 +8,7 @@ import argparse
 from array import array
 from objects import DiscRecord, Map, BigDir, BootBlock, BOOT_BLOCK_ADDRESS
 from itertools import product
-from device import DiscImage
+from device import DiscImage, TestDevice
 
 
 ZONE0BITS = 60*8 # Bits used in Zone 0
@@ -76,6 +76,7 @@ parser.add_argument("device")
 parser.add_argument("sectors", type=int)
 parser.add_argument("--4k", dest="bigsecs", action="store_true")
 parser.add_argument("--lfau", type=int)
+parser.add_argument("--test", dest="testmode", action="store_true")
 
 args = parser.parse_args(sys.argv[1:])
 disc_sectors = args.sectors
@@ -179,10 +180,17 @@ root.parent_id = dr.root
 # print("Map crosscheck: {:x}".format(map.cross_check()))
 bootrec = BootBlock(dr)
 
-with open(args.device, "w+b") as f:
-    disc = DiscImage(f)
+def format(disc):
     disc.write_at(BOOT_BLOCK_ADDRESS, bootrec)
     disc.write_at(map_address, map.data)
     disc.write_at(map_address + map_size, map.data)
     disc.write_at(root_address, root.data())
 
+if args.testmode:
+    disc = TestDevice(disc_sectors, 2<<log2_secsize)
+    format(disc)
+    disc.save(args.device)
+else:
+    with open(args.device, "w+b") as f:
+       disc = DiscImage(f)
+       format(disc)
