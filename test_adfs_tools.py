@@ -867,7 +867,8 @@ class TestUtilsFunctions(unittest.TestCase):
 
     def test_find_map(self):
         """find_map should return correct address and length."""
-        from utils import find_map, DiscImage
+        from utils import find_map
+        from device import DiscImage
 
         image, dr, m = self._make_disc_image()
         disc = DiscImage(io.BytesIO(image))
@@ -880,7 +881,8 @@ class TestUtilsFunctions(unittest.TestCase):
 
     def test_get_map(self):
         """get_map should return a valid Map object."""
-        from utils import get_map, DiscImage
+        from utils import get_map
+        from device import DiscImage
 
         image, dr, m = self._make_disc_image()
         disc = DiscImage(io.BytesIO(image))
@@ -892,7 +894,8 @@ class TestUtilsFunctions(unittest.TestCase):
 
     def test_get_map_cross_check(self):
         """Map read by get_map should have valid cross check."""
-        from utils import get_map, DiscImage
+        from utils import get_map
+        from device import DiscImage
 
         image, dr, m = self._make_disc_image()
         disc = DiscImage(io.BytesIO(image))

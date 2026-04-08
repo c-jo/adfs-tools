@@ -2,7 +2,7 @@
 
 import sys
 import struct
-from utils import DiscImage
+from device import DiscImage
 
 SECSIZE = 512
 

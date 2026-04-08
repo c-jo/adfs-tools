@@ -1,6 +1,7 @@
 #! /usr/bin/python
 
-from utils import get_map, DiscImage
+from utils import get_map
+from device import DiscImage
 from objects import BigDir
 import sys
 

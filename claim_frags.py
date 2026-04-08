@@ -2,7 +2,8 @@
 
 import sys
 from objects import Map
-from utils import find_map, DiscImage
+from utils import find_map
+from device import DiscImage
 
 fd = open("Loader", "rb")
 fd.seek(0,2)

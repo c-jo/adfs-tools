@@ -1,5 +1,4 @@
 from objects import Map, DiscRecord, BOOT_BLOCK_ADDRESS
-from device import DiscImage, HDFImage
 
 
 def find_map(disc):

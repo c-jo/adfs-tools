@@ -8,7 +8,7 @@ import argparse
 from array import array
 from objects import DiscRecord, Map, BigDir, BootBlock, BOOT_BLOCK_ADDRESS
 from itertools import product
-from utils import DiscImage
+from device import DiscImage
 
 
 ZONE0BITS = 60*8 # Bits used in Zone 0

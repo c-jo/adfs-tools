@@ -1,6 +1,7 @@
 #! /usr/bin/python
 
-from utils import get_map, DiscImage, HDFImage
+from utils import get_map
+from device import DiscImage, HDFImage
 from objects import BigDir, BootBlock, BOOT_BLOCK_ADDRESS
 import sys
 import cmd
