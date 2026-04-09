@@ -61,6 +61,25 @@ class Shell(cmd.Cmd):
         'List the contents of the current directory'
         csd.show()
 
+    def do_info(self, arg):
+        'Print the disc geometry from the disc record.'
+        fs_map.disc_record.show()
+
+    def do_map(self, arg):
+        'Show where the map starts and ends, and which zone(s) it uses.'
+        dr = fs_map.disc_record
+        map_zone, map_address, map_size = dr.map_info()
+        map_end = map_address + map_size * 2 - 1
+        start_zone, start_bit = fs_map.disc_to_map(map_address)
+        end_zone,   end_bit   = fs_map.disc_to_map(map_address + map_size * 2 - 1)
+        print(f"Map copy 1:  0x{map_address:08x} – 0x{map_address + map_size - 1:08x}  ({map_size} bytes)")
+        print(f"Map copy 2:  0x{map_address + map_size:08x} – 0x{map_end:08x}  ({map_size} bytes)")
+        if start_zone == end_zone:
+            print(f"Map zone:    {start_zone}  (bits {start_bit}–{end_bit})")
+        else:
+            print(f"Map zones:   {start_zone}–{end_zone}  (bits {start_bit}–{end_bit})")
+        print(f"Zones total: {dr.nzones}  (zone 0 … zone {dr.nzones - 1})")
+
     def do_zone(self, arg):
         'Show info about a zone'
         zone = int(arg)

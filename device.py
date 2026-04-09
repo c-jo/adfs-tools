@@ -101,7 +101,9 @@ class TestDevice(Device):
 
     def write(self, lba, count, data):
         assert len(data) == count * self._sector_size
-        self._writes.append((lba * self._sector_size, bytes(data)))
+        for i in range(count):
+            offset = i * self._sector_size
+            self._writes.append(((lba + i) * self._sector_size, bytes(data[offset:offset + self._sector_size])))
 
     def size(self):
         return self._num_sectors * self._sector_size

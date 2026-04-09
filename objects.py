@@ -1,7 +1,6 @@
 import struct
 import array
 import ctypes
-import random
 
 from functools import reduce
 
@@ -33,7 +32,7 @@ class DiscRecord(ctypes.Structure):
         ('root', ctypes.c_uint32),
         ('disc_size_1', ctypes.c_uint32),
         ('disc_id', ctypes.c_uint16),
-        ('disc_name', ctypes.c_char*10),
+        ('_disc_name', ctypes.c_char*10),
         ('disctype', ctypes.c_uint32),
         ('disc_size_2', ctypes.c_uint32),
         ('log2share', ctypes.c_uint8),
@@ -86,8 +85,20 @@ class DiscRecord(ctypes.Structure):
         self.disc_size_2 = new_size >> 32
         self.disc_size_1 = new_size
 
+    @property
+    def disc_name(self):
+        return self._disc_name.decode("latin-1").rstrip()
+
+    @disc_name.setter
+    def disc_name(self, new_name):
+        self._disc_name = ((new_name + " "*10)[0:10]).encode("latin-1")
+
     def show(self):
+        tracks = self.disc_size // self.secsize // self.heads // self.secspertrack
+        calc_size = self.secsize * tracks * self.heads * self.secspertrack
+
         print("Disc Record:")
+        print("  Geometry: %d heads, %d sectors, (%d tracks)" % (self.heads, self.secspertrack, tracks))
         print("  Sector size: %d" % self.secsize)
         print("  Bytes per map bit: %d" % self.bpmb)
         print("  ID Length: %d" % self.idlen)
@@ -98,6 +109,9 @@ class DiscRecord(ctypes.Structure):
         print("  Share size: {}".format(self.share_size))
         print("  Disc Size: %d (MB)" % (self.disc_size // 1024 // 1024))
         print("  Root: {:x} ({} bytes)".format(self.root, self.root_size))
+
+        if calc_size != self.disc_size:
+            print("! Sector Size * Heads * Sectors * Tracks (%d) doesn't match disc size (%d)".format(calc_size, self.disc_size))
 
     def map_info(self):
         return (
@@ -155,15 +169,14 @@ class Map(object):
         return ((self.disc_record.secsize*8) - self.disc_record.zone_spare) // (self.disc_record.idlen+1)
 
     def clear(self):
-        cross_checks = random.randbytes(self.disc_record.nzones-1)
-        cross_checks = cross_checks + int.to_bytes(0xff ^ reduce(lambda a,b:a^b, cross_checks), 1, "little")
+        cross_checks = b'\xff' + bytes(self.disc_record.nzones - 1)
 
         for zone in range(self.nzones):
             zone_start = zone * self.disc_record.secsize
             for n in range(64 if zone == 0 else 4, self.disc_record.secsize):
                 self.data[zone_start+n] = 0x00
 
-            last_bit = self.disc_record.secsize*8-self.disc_record.zone_spare-1
+            last_bit = (self.disc_record.secsize - (64 if zone == 0 else 4)) * 8 - 1
             self.set_bit(zone, last_bit, 1)
 
             start_bit = 0x18 + (480 if zone == 0 else 0)
@@ -430,7 +443,7 @@ class BigDir(object):
 
     def __init__(self, data=None):
         if data is None:
-            self.sequence = 1
+            self.sequence = 0
             self.size = 2048
             self.name = b'$'
             self.entries = []
@@ -489,7 +502,7 @@ class BigDir(object):
         data = struct.pack('BBBB4sIIIII',seq,0,0,0,b'SBPr',
             len(self.name),self.size,len(self.entries),len(name_heap),self.parent_id)
 
-        dir_name = self.name+b'\x0d'
+        dir_name = self.name
         while len(dir_name) % 4 != 0:
             dir_name += b'\x00'
 

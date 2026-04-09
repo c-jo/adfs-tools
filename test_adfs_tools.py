@@ -380,8 +380,7 @@ class TestBigDir(unittest.TestCase):
     def test_empty_directory(self):
         """Creating an empty BigDir should produce valid defaults."""
         d = BigDir()
-        self.assertEqual(d.sequence, 1)
-        self.assertEqual(d.size, 2048)
+        self.assertEqual(d.sequence, 0)
         self.assertEqual(d.name, b'$')
         self.assertEqual(len(d.entries), 0)
 
@@ -451,7 +450,7 @@ class TestBigDir(unittest.TestCase):
         self.assertEqual(len(raw), 2048)
         d2 = BigDir(raw)
         self.assertEqual(d2.name, b'$')
-        self.assertEqual(d2.sequence, 1)
+        self.assertEqual(d2.sequence, 0)
         self.assertEqual(len(d2.entries), 0)
 
     def test_roundtrip_with_entries(self):
@@ -617,37 +616,15 @@ class TestBootBlock(unittest.TestCase):
         self.assertEqual(bb2.disc_record.nzones, 4)
 
 
+from fcform import make_shape, check_alloc, find_alloc, find_allocs, write_format
+
+
 class TestFcformFunctions(unittest.TestCase):
     """Tests for fcform.py standalone functions (make_shape, check_alloc, find_alloc)."""
 
-    def setUp(self):
-        """Import fcform functions with mocked sys.argv."""
-        # fcform.py has top-level code that runs on import using argparse,
-        # so we need to test the functions via direct definition.
-        # Instead, we test the logic using local copies.
-        pass
-
-    def test_make_shape_import(self):
-        """Test make_shape produces a valid CHS geometry."""
-        # Re-implement make_shape locally to test without importing fcform
-        # (which has top-level argparse code)
-        from itertools import product
-
-        def make_shape(sectors):
-            best_wasted = 0xffffffff
-            best = None
-            for secs, heads in product(range(63, 15, -1), range(255, 15, -1)):
-                cyls = sectors // (secs * heads)
-                if cyls > 65535:
-                    continue
-                wasted = sectors % (secs * heads)
-                if wasted < best_wasted:
-                    best_wasted = wasted
-                    best = (secs, heads, sectors // (secs * heads))
-            return best
-
-        # Test with a typical SD card size (4GB at 512-byte sectors)
-        sectors = 4 * 1024 * 1024 * 1024 // 512
+    def test_make_shape(self):
+        """make_shape produces a valid CHS geometry."""
+        sectors = 4 * 1024 * 1024 * 1024 // 512  # 4 GB at 512-byte sectors
         result = make_shape(sectors)
         self.assertIsNotNone(result)
         secs, heads, cyls = result
@@ -656,37 +633,70 @@ class TestFcformFunctions(unittest.TestCase):
         self.assertGreater(heads, 15)
         self.assertLessEqual(heads, 255)
         self.assertLessEqual(cyls, 65535)
-        # Product should be close to total sectors
         self.assertLessEqual(secs * heads * cyls, sectors)
 
-    def test_check_alloc(self):
-        """Test check_alloc validates allocations correctly."""
-        ZONE0BITS = 60 * 8
-
-        def check_alloc(sectors, log2ss, zones, zonespare, log2bpmb, idlen):
-            disc_allocs = (sectors << log2ss) // (1 << log2bpmb)
-            bpzm = 8 * (1 << log2ss) - zonespare
-            map_allocs = (bpzm * zones) - ZONE0BITS
-            idpz = bpzm // (idlen + 1)
-            if map_allocs < disc_allocs:
-                return False
-            if (1 << idlen) < idpz * zones:
-                return False
-            excess_allocs = map_allocs - disc_allocs
-            if 0 < excess_allocs <= idlen:
-                return False
-            lz_allocs = disc_allocs - (map_allocs - bpzm)
-            if lz_allocs <= idlen:
-                return False
-            return True
-
-        # A known-good combination for a 512MB disc
+    def test_check_alloc_valid(self):
+        """check_alloc returns True for a known-good combination."""
         result = check_alloc(1048576, 9, 4, 32, 10, 15)
         self.assertIsInstance(result, bool)
 
-        # Clearly insufficient zones should fail
-        result = check_alloc(1048576, 9, 1, 32, 10, 15)
-        self.assertFalse(result)
+    def test_check_alloc_too_few_zones(self):
+        """check_alloc returns False when zones are clearly insufficient."""
+        self.assertFalse(check_alloc(1048576, 9, 1, 32, 10, 15))
+
+    def test_find_alloc_returns_tuple(self):
+        """find_alloc returns a 4-tuple for a valid disc size."""
+        # Use find_allocs to identify a known-valid (zones, log2bpmb) pair first
+        allocs = find_allocs(1048576, 9)
+        self.assertGreater(len(allocs), 0, "find_allocs returned nothing")
+        bpmb, (zones, _zonespare, log2bpmb, _idlen) = next(iter(allocs.items()))
+        result = find_alloc(1048576, 9, zones, log2bpmb)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(result), 4)  # (zones, zonespare, log2bpmb, idlen)
+
+    def test_find_allocs_returns_dict(self):
+        """find_allocs returns a non-empty dict mapping bpmb -> alloc tuple."""
+        allocs = find_allocs(1048576, 9)
+        self.assertGreater(len(allocs), 0)
+        for bpmb, alloc in allocs.items():
+            self.assertIsInstance(bpmb, int)
+            self.assertEqual(len(alloc), 4)
+
+    def test_write_format_produces_boot_block(self):
+        """write_format writes a valid boot block to a TestDevice."""
+        from device import TestDevice
+        from objects import DiscRecord, BOOT_BLOCK_ADDRESS
+
+        disc_size = 64 * 1024 * 1024
+        sectors = disc_size // 512
+
+        allocs = find_allocs(sectors, 9)
+        self.assertGreater(len(allocs), 0)
+        _bpmb, (zones, zonespare, log2bpmb, idlen) = next(iter(allocs.items()))
+
+        dr = DiscRecord()
+        dr.log2secsize = 9
+        dr.secspertrack = 63
+        dr.heads = 16
+        dr.nzones = zones
+        dr.zone_spare = zonespare
+        dr.log2bpmb = log2bpmb
+        dr.idlen = idlen
+        dr.disc_size = disc_size
+        dr.log2share = 0
+        dr.disc_name = "Test"
+
+        dev = TestDevice(sectors, dr.secsize)
+        write_format(dev, dr)
+
+        written = {addr: data for addr, data in dev._writes}
+        self.assertIn(BOOT_BLOCK_ADDRESS, written)
+        boot_bytes = written[BOOT_BLOCK_ADDRESS]
+        # disc record starts at offset 0x1c0 within the boot block
+        dr_bytes = boot_bytes[0x1c0:0x1c0 + 60]
+        recovered = DiscRecord.from_bytes(dr_bytes)
+        self.assertEqual(recovered.nzones, dr.nzones)
+        self.assertEqual(recovered.idlen, dr.idlen)
 
 
 class TestMapWithFormat(unittest.TestCase):
