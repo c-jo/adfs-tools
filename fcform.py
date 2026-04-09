@@ -82,9 +82,6 @@ def write_format(disc, dr):
     map_start = fs_map.disc_to_map(map_address)
     map_end   = fs_map.disc_to_map(map_address + (map_size * 2) - 1) # Two copies
 
-    if map_start[0] != map_end[0]:
-        raise RuntimeError("Map spans multiple zones ({} to {}).".format(map_start[0], map_end[0]))
-
     # Root goes immediately after both map copies, sector-aligned and
     # beyond the last map bit used by the map itself.
     root_address = map_address + (map_size * 2)
@@ -101,7 +98,11 @@ def write_format(disc, dr):
     fs_map.disc_record = dr
 
     fs_map.allocate(0, 2, 0, dr.idlen)
-    fs_map.allocate(map_zone, 2, map_start[1], map_end[1])
+    for z in range(map_start[0], map_end[0] + 1):
+        zone_last_bit = dr.secsize * 8 - dr.zone_spare - (ZONE0BITS + 1 if z == 0 else 1)
+        from_bit = map_start[1] if z == map_start[0] else 0
+        to_bit   = map_end[1]   if z == map_end[0]   else zone_last_bit
+        fs_map.allocate(z, 2, from_bit, to_bit)
     fs_map.allocate(root_zone, root_frag_id, root_offset, root_offset + root_map_bits)
 
     last_zone, overhang_start = fs_map.disc_to_map(dr.disc_size)

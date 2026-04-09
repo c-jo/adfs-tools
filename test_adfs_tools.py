@@ -698,6 +698,47 @@ class TestFcformFunctions(unittest.TestCase):
         self.assertEqual(recovered.nzones, dr.nzones)
         self.assertEqual(recovered.idlen, dr.idlen)
 
+    def test_write_format_multizone_map(self):
+        """write_format succeeds when the map occupies more than one zone."""
+        from device import TestDevice
+        from objects import DiscRecord, Map, BOOT_BLOCK_ADDRESS
+
+        # A 64 GB disc with 512-byte sectors and bpmb=2048 produces a map that
+        # spans two zones; use the parameters discovered by find_allocs.
+        sectors = 64 * 1024 * 1024 * 1024 // 512
+        allocs = find_allocs(sectors, 9)
+        self.assertIn(2048, allocs, "Expected bpmb=2048 allocation for 64 GB disc")
+        zones, zonespare, log2bpmb, idlen = allocs[2048]
+
+        dr = DiscRecord()
+        dr.log2secsize = 9
+        dr.secspertrack = 63
+        dr.heads = 16
+        dr.nzones = zones
+        dr.zone_spare = zonespare
+        dr.log2bpmb = log2bpmb
+        dr.idlen = idlen
+        dr.disc_size = sectors * 512
+        dr.log2share = 0
+        dr.disc_name = "MultiZ"
+
+        # Confirm this configuration actually spans multiple zones.
+        map_zone, map_address, map_size = dr.map_info()
+        tmp_map = Map(b'\0' * map_size)
+        tmp_map.disc_record = dr
+        map_start = tmp_map.disc_to_map(map_address)
+        map_end   = tmp_map.disc_to_map(map_address + map_size * 2 - 1)
+        self.assertNotEqual(map_start[0], map_end[0],
+                            "Test requires a map that spans multiple zones")
+
+        dev = TestDevice(sectors, dr.secsize)
+        info = write_format(dev, dr)  # must not raise
+
+        written = {addr: data for addr, data in dev._writes}
+        self.assertIn(BOOT_BLOCK_ADDRESS, written)
+        self.assertIn(info['map_address'], written)
+        self.assertIn(info['root_address'], written)
+
 
 class TestMapWithFormat(unittest.TestCase):
     """Integration tests: format a map and verify its structure."""
